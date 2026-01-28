@@ -1,6 +1,8 @@
 # Exif Cleaner for Seeker
 
-A privacy-focused mobile tool designed to remove metadata (Exif data) from your photos before sharing them online. 
+A privacy-focused mobile tool designed to remove metadata (Exif data) from your photos before sharing them online.
+
+[English](README.md) | [日本語](README_JA.md) 
 
 ## Why Open Source?
 
