@@ -308,8 +308,30 @@ export default function App() {
   };
 
   const handlePrivacyPolicy = () => {
-    // Linked to the raw markdown file in the repo
-    Linking.openURL('https://github.com/codex-9990/exif-cleaner-for-Seeker/blob/main/PRIVACY_POLICY.md');
+    // Linked to the raw markdown file in the repo based on locale
+    const repoBase = 'https://github.com/codex-9990/exif-cleaner-for-Seeker/blob/main/';
+    let filename = 'PRIVACY_POLICY.md'; // Default English
+
+    const currentLocale = i18n.locale.split('-')[0]; // simple check for 'ja', 'fr', etc.
+    const fullLocale = i18n.locale; // for 'zh-TW', 'zh-CN'
+
+    if (fullLocale === 'zh-TW' || fullLocale === 'zh-Hant') {
+      filename = 'PRIVACY_POLICY_TW.md';
+    } else if (fullLocale === 'zh-CN' || fullLocale === 'zh-Hans') {
+      filename = 'PRIVACY_POLICY_CN.md';
+    } else {
+      switch (currentLocale) {
+        case 'ja': filename = 'PRIVACY_POLICY_JA.md'; break;
+        case 'fr': filename = 'PRIVACY_POLICY_FR.md'; break;
+        case 'de': filename = 'PRIVACY_POLICY_DE.md'; break;
+        case 'it': filename = 'PRIVACY_POLICY_IT.md'; break;
+        case 'es': filename = 'PRIVACY_POLICY_ES.md'; break;
+        case 'ko': filename = 'PRIVACY_POLICY_KO.md'; break;
+        case 'ar': filename = 'PRIVACY_POLICY_AR.md'; break;
+      }
+    }
+
+    Linking.openURL(repoBase + filename);
   };
 
   // --- RENDER HELPERS ---

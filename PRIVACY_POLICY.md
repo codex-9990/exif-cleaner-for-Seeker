@@ -1,5 +1,7 @@
 # Privacy Policy for Exif Cleaner
 
+[English](PRIVACY_POLICY.md) | [日本語](PRIVACY_POLICY_JA.md) | [Français](PRIVACY_POLICY_FR.md) | [Deutsch](PRIVACY_POLICY_DE.md) | [Italiano](PRIVACY_POLICY_IT.md) | [Español](PRIVACY_POLICY_ES.md) | [繁體中文](PRIVACY_POLICY_TW.md) | [简体中文](PRIVACY_POLICY_CN.md) | [한국어](PRIVACY_POLICY_KO.md) | [العربية](PRIVACY_POLICY_AR.md)
+
 **Effective Date:** 2026-01-29
 
 ## 1. Introduction
