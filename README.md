@@ -16,6 +16,7 @@ We believe that tools handling sensitive data should be transparent. By making t
 - **Batch Processing:** Select and clean multiple images at once.
 - **Multi-language Support:** English, Japanese, French, German, Italian, Spanish, Chinese (Traditional/Simplified), Korean, Arabic.
 - **Dark Mode:** Fully supported.
+- **Support the Developer:** Option to donate SOL to support the project.
 
 ## How it works
 
@@ -32,5 +33,24 @@ This project is built with [Expo](https://expo.dev) and React Native.
 npm install
 
 # Start the app
+# Start the app
 npx expo start
 ```
+
+## Build
+
+### Android
+
+```bash
+# Preview build (APK for testing)
+npx eas-cli build -p android --profile preview
+
+# Production build (AAB for Google Play)
+npx eas-cli build -p android --profile production
+```
+
+> **Note for Windows Users:**
+> If you encounter a PowerShell security error, prepend `cmd /c` to the command:
+> ```powershell
+> cmd /c npx eas-cli build -p android --profile preview
+> ```

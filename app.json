@@ -25,7 +25,15 @@
       "package": "com.antigravity.exifcleaner",
       "permissions": [
         "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
+      "blockedPermissions": [
+        "RECORD_AUDIO",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "SYSTEM_ALERT_WINDOW",
+        "READ_MEDIA_AUDIO",
+        "CAMERA",
         "ACCESS_MEDIA_LOCATION"
       ]
     },
@@ -41,13 +49,18 @@
         {
           "photosPermission": "The app saves the cleaned photos to your gallery.",
           "savePhotosPermission": "The app saves the cleaned photos to your gallery.",
-          "isAccessMediaLocationEnabled": true
+          "isAccessMediaLocationEnabled": false
         }
       ],
       "expo-localization"
     ],
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "79fe8d6c-ee7e-4f86-8f5c-762ae36d1dbe"
+      }
     }
   }
 }

@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Image, TouchableOpacity, ActivityIndicator, Alert, Platform, Modal, ScrollView, useColorScheme } from 'react-native';
+import { StyleSheet, Text, View, Image, TouchableOpacity, ActivityIndicator, Alert, Platform, Modal, ScrollView, useColorScheme, Linking } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -59,7 +59,7 @@ export default function App() {
   // Settings State
   const systemColorScheme = useColorScheme();
   const [themeMode, setThemeMode] = useState<'system' | 'light' | 'dark'>('system');
-  const [locale, setLocale] = useState(i18n.locale);
+  const [locale, setLocale] = useState(i18n.locale); // Ensure initial value matches i18n
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Derived Theme
@@ -75,9 +75,25 @@ export default function App() {
     (async () => {
       if (Platform.OS !== 'web') {
         await requestPermission();
+        await clearCache(); // Startup cleanup
       }
     })();
   }, []);
+
+  const clearCache = async () => {
+    try {
+      if (!FileSystem.cacheDirectory) return;
+      const cacheDir = FileSystem.cacheDirectory + 'ImageManipulator';
+      const info = await FileSystem.getInfoAsync(cacheDir);
+      if (info.exists && info.isDirectory) {
+        await FileSystem.deleteAsync(cacheDir, { idempotent: true });
+        // Re-create ensures subsequent operations don't fail immediately
+        await FileSystem.makeDirectoryAsync(cacheDir, { intermediates: true });
+      }
+    } catch (e) {
+      console.warn("Failed to clear cache:", e);
+    }
+  };
 
   const getFileSize = async (uri: string) => {
     try {
@@ -240,14 +256,75 @@ export default function App() {
     }
   };
 
+  const handleDonate = () => {
+    const address = "9vCKCmshK75XnJjfFvgjsaK7Yv4GmwJVHoQnTuGj9psw";
+    // Removing parameters to ensure compatibility with all wallets (Phantom, Backpack, etc.)
+    const url = `solana:${address}`;
+    Linking.openURL(url).catch(err => {
+      console.error("Donate error:", err);
+      // Fallback if no wallet is found
+      Alert.alert(i18n.t('errorTitle'), "No wallet app found.\nPlease donate to: " + address.slice(0, 8) + "...");
+    });
+  };
+
+  const handleReset = () => {
+    Alert.alert(
+      i18n.t('resetTitle'),
+      i18n.t('resetConfirm'),
+      [
+        { text: i18n.t('cancel'), style: 'cancel' },
+        {
+          text: i18n.t('reset'),
+          style: 'destructive',
+          onPress: async () => {
+            setSelectedImages([]);
+            setCurrentIndex(0);
+            setPreviewUris({});
+            setImageSizes({ original: 0, preview: 0 });
+            setStatus('idle');
+            await clearCache();
+          }
+        }
+      ]
+    );
+  };
+
+  const handleManualClearCache = async () => {
+    Alert.alert(
+      i18n.t('clearCache'),
+      i18n.t('cacheClearConfirm'),
+      [
+        { text: i18n.t('cancel'), style: 'cancel' },
+        {
+          text: 'OK',
+          style: 'destructive',
+          onPress: async () => {
+            await clearCache();
+            Alert.alert(i18n.t('successTitle'), i18n.t('cacheCleared'));
+          }
+        }
+      ]
+    );
+  };
+
+  const handlePrivacyPolicy = () => {
+    // Replace with your actual Privacy Policy URL
+    Linking.openURL('https://example.com/privacy');
+  };
+
   // --- RENDER HELPERS ---
   const renderLanguageOption = (langCode: string, label: string) => (
     <TouchableOpacity
+      key={langCode}
       style={[
         styles.settingOption,
         locale.startsWith(langCode) && { backgroundColor: colors.tint }
       ]}
-      onPress={() => setLocale(langCode)}
+      onPress={() => {
+        i18n.locale = langCode;
+        setLocale(langCode);
+        setIsSettingsOpen(false);
+      }}
     >
       <Text style={[styles.settingText, { color: colors.text }, locale.startsWith(langCode) && { color: colors.tintText }]}>
         {label}
@@ -270,10 +347,12 @@ export default function App() {
   );
 
 
+
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      <StatusBar style={activeTheme === 'dark' ? 'light' : 'dark'} />
 
-      {/* HEADER */}
+      {/* HEADER - Fixed at top */}
       <View style={styles.header}>
         <View>
           <Text style={[styles.title, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit>{i18n.t('title')}</Text>
@@ -284,106 +363,144 @@ export default function App() {
         </TouchableOpacity>
       </View>
 
-      {/* IMAGE CARD */}
-      <View style={[styles.card, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-        {selectedImages.length > 0 ? (
-          <>
-            <Image
-              source={{ uri: previewUris[selectedImages[currentIndex]?.uri] || selectedImages[currentIndex]?.uri }}
-              style={styles.previewImage}
-              resizeMode="contain"
-            />
+      {/* SCROLLABLE CONTENT */}
+      <ScrollView
+        style={{ flex: 1, width: '100%' }}
+        contentContainerStyle={{ paddingBottom: 100, alignItems: 'center' }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* IMAGE CARD */}
+        <View style={[styles.card, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+          {selectedImages.length > 0 ? (
+            <>
+              <Image
+                source={{ uri: previewUris[selectedImages[currentIndex]?.uri] || selectedImages[currentIndex]?.uri }}
+                style={styles.previewImage}
+                resizeMode="contain"
+              />
 
-            {/* Nav */}
-            {selectedImages.length > 1 && (
-              <View style={[styles.navContainer, { backgroundColor: colors.navBg }]}>
-                <TouchableOpacity onPress={handlePrev} disabled={currentIndex === 0} style={[styles.navButton, { borderColor: colors.border, backgroundColor: colors.bg }, currentIndex === 0 && styles.disabledNav]}>
-                  <Text style={[styles.navText, { color: colors.text }]}>&lt;</Text>
-                </TouchableOpacity>
-                <View style={styles.navBadge}>
-                  <Text style={[styles.navBadgeText, { color: colors.text }]}>{currentIndex + 1} / {selectedImages.length}</Text>
+              {/* Nav */}
+              {selectedImages.length > 1 && (
+                <View style={[styles.navContainer, { backgroundColor: colors.navBg }]}>
+                  <TouchableOpacity onPress={handlePrev} disabled={currentIndex === 0} style={[styles.navButton, { borderColor: colors.border, backgroundColor: colors.bg }, currentIndex === 0 && styles.disabledNav]}>
+                    <Text style={[styles.navText, { color: colors.text }]}>&lt;</Text>
+                  </TouchableOpacity>
+                  <View style={styles.navBadge}>
+                    <Text style={[styles.navBadgeText, { color: colors.text }]}>{currentIndex + 1} / {selectedImages.length}</Text>
+                  </View>
+                  <TouchableOpacity onPress={handleNext} disabled={currentIndex === selectedImages.length - 1} style={[styles.navButton, { borderColor: colors.border, backgroundColor: colors.bg }, currentIndex === selectedImages.length - 1 && styles.disabledNav]}>
+                    <Text style={[styles.navText, { color: colors.text }]}>&gt;</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity onPress={handleNext} disabled={currentIndex === selectedImages.length - 1} style={[styles.navButton, { borderColor: colors.border, backgroundColor: colors.bg }, currentIndex === selectedImages.length - 1 && styles.disabledNav]}>
-                  <Text style={[styles.navText, { color: colors.text }]}>&gt;</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </>
-        ) : (
-          <View style={styles.placeholder}>
-            <Text style={[styles.placeholderText, { color: colors.subText }]}>{i18n.t('noImage')}</Text>
-          </View>
-        )}
-      </View>
-
-      {/* INFO & CONTROLS */}
-      {selectedImages.length > 0 && (
-        <View style={[styles.infoContainer, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-          <View style={styles.sizeRow}>
-            <Text style={[styles.sizeLabel, { color: colors.subText }]}>{i18n.t('original')}: {formatSize(imageSizes.original)}</Text>
-            <Text style={[styles.arrowText, { color: colors.subText }]}>→</Text>
-            <Text style={[styles.sizeLabel, styles.previewSizeLabel, { color: colors.text }]}>
-              {i18n.t('preview')}: {imageSizes.preview > 0 ? formatSize(imageSizes.preview) : i18n.t('calculating')}
-            </Text>
-          </View>
-
-          <View style={styles.sliderContainer}>
-            <Text style={[styles.sliderLabel, { color: colors.text }]}>{i18n.t('quality')}: {Math.round(compression * 100)}%</Text>
-            <Slider
-              style={{ width: '100%', height: 40 }}
-              minimumValue={0}
-              maximumValue={1}
-              step={0.05}
-              value={compression}
-              onSlidingComplete={handleCompressionChange}
-              minimumTrackTintColor={colors.tint}
-              maximumTrackTintColor={colors.border}
-              thumbTintColor={colors.tint}
-            />
-          </View>
+              )}
+            </>
+          ) : (
+            <View style={styles.placeholder}>
+              <Text style={[styles.placeholderText, { color: colors.subText }]}>{i18n.t('noImage')}</Text>
+            </View>
+          )}
         </View>
-      )}
 
-      {/* BUTTONS */}
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={[styles.button, { backgroundColor: colors.cardBg, borderColor: colors.border }]} onPress={pickImage} disabled={processing}>
-          <Text style={[styles.buttonText, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit>{selectedImages.length > 0 ? i18n.t('reselectImages') : i18n.t('selectImage')}</Text>
-        </TouchableOpacity>
-
-        <View style={styles.actionRow}>
-          <TouchableOpacity
-            style={[styles.button, styles.actionButton, { backgroundColor: colors.cardBg, borderColor: colors.border }, (selectedImages.length === 0 || processing) && styles.disabledButton]}
-            onPress={handleSaveAllToGallery}
-            disabled={selectedImages.length === 0 || processing}
-          >
-            {processing && status === 'processing' ? (
-              <ActivityIndicator color={colors.text} />
-            ) : (
-              <Text style={[styles.buttonText, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit>
-                {selectedImages.length > 1 ? i18n.t('saveAll') : i18n.t('saveToGallery')}
+        {/* SUCCESS MESSAGE & DONATION (Moved here) */}
+        {status === 'success' && (
+          <View style={{ alignItems: 'center', marginBottom: 20, width: '100%' }}>
+            <Text style={styles.successText}>{i18n.t('processedSuccess')}</Text>
+            <TouchableOpacity
+              onPress={handleDonate}
+              style={{ marginTop: 12, padding: 10, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.cardBg, borderRadius: 12, borderWidth: 1, borderColor: colors.tint }}
+            >
+              <Ionicons name="heart" size={16} color={colors.tint} style={{ marginRight: 6 }} />
+              <Text style={{ color: colors.tint, fontSize: 14, fontWeight: '600' }}>
+                {i18n.t('donate')}
               </Text>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.button, styles.actionButton, { backgroundColor: colors.tint, borderColor: colors.tint }, (selectedImages.length === 0 || processing) && styles.disabledButton]}
-            onPress={handleShareCurrent}
-            disabled={selectedImages.length === 0 || processing}
-          >
-            <Text style={[styles.buttonText, { color: colors.tintText }]} numberOfLines={1} adjustsFontSizeToFit>
-              {selectedImages.length > 1 ? i18n.t('shareCurrent') : i18n.t('shareFile')}
-            </Text>
-          </TouchableOpacity>
-        </View>
-        {selectedImages.length > 1 && (
-          <Text style={[styles.noteText, { color: colors.subText }]}>{i18n.t('shareNote')}</Text>
+            </TouchableOpacity>
+          </View>
         )}
-      </View>
 
-      {status === 'success' && <Text style={styles.successText}>{i18n.t('processedSuccess')}</Text>}
+        {/* INFO & CONTROLS */}
+        {selectedImages.length > 0 && (
+          <View style={[styles.infoContainer, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+            <View style={styles.sizeRow}>
+              <Text style={[styles.sizeLabel, { color: colors.subText }]}>{i18n.t('original')}: {formatSize(imageSizes.original)}</Text>
+              <Text style={[styles.arrowText, { color: colors.subText }]}>→</Text>
+              <Text style={[styles.sizeLabel, styles.previewSizeLabel, { color: colors.text }]}>
+                {i18n.t('preview')}: {imageSizes.preview > 0 ? formatSize(imageSizes.preview) : i18n.t('calculating')}
+              </Text>
+            </View>
 
-      <StatusBar style={activeTheme === 'dark' ? 'light' : 'dark'} />
+            <View style={styles.sliderContainer}>
+              <Text style={[styles.sliderLabel, { color: colors.text }]}>{i18n.t('quality')}: {Math.round(compression * 100)}%</Text>
+              <Slider
+                style={{ width: '100%', height: 40 }}
+                minimumValue={0}
+                maximumValue={1}
+                step={0.05}
+                value={compression}
+                onSlidingComplete={handleCompressionChange}
+                minimumTrackTintColor={colors.tint}
+                maximumTrackTintColor={colors.border}
+                thumbTintColor={colors.tint}
+              />
+            </View>
+          </View>
+        )}
 
+        {/* BUTTONS */}
+        <View style={styles.buttonContainer}>
+          {selectedImages.length > 0 ? (
+            <View style={styles.actionRow}>
+              <TouchableOpacity style={[styles.button, styles.actionButton, { backgroundColor: colors.cardBg, borderColor: colors.border }]} onPress={pickImage} disabled={processing}>
+                <Text style={[styles.buttonText, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit>{i18n.t('reselectImages')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.button, { width: 60, backgroundColor: colors.danger, borderColor: colors.danger }]} onPress={handleReset} disabled={processing}>
+                <Ionicons name="trash-outline" size={24} color="white" />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity style={[styles.button, { backgroundColor: colors.cardBg, borderColor: colors.border }]} onPress={pickImage} disabled={processing}>
+              <Text style={[styles.buttonText, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit>{i18n.t('selectImage')}</Text>
+            </TouchableOpacity>
+          )}
+
+          <View style={styles.actionRow}>
+            <TouchableOpacity
+              style={[styles.button, styles.actionButton, { backgroundColor: colors.cardBg, borderColor: colors.border }, (selectedImages.length === 0 || processing) && styles.disabledButton]}
+              onPress={handleSaveAllToGallery}
+              disabled={selectedImages.length === 0 || processing}
+            >
+              {processing && status === 'processing' ? (
+                <ActivityIndicator color={colors.text} />
+              ) : (
+                <Text style={[styles.buttonText, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit>
+                  {selectedImages.length > 1 ? i18n.t('saveAll') : i18n.t('saveToGallery')}
+                </Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.button, styles.actionButton, { backgroundColor: colors.tint, borderColor: colors.tint }, (selectedImages.length === 0 || processing) && styles.disabledButton]}
+              onPress={handleShareCurrent}
+              disabled={selectedImages.length === 0 || processing}
+            >
+              <Text style={[styles.buttonText, { color: colors.tintText }]} numberOfLines={1} adjustsFontSizeToFit>
+                {selectedImages.length > 1 ? i18n.t('shareCurrent') : i18n.t('shareFile')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          {selectedImages.length > 1 && (
+            <Text style={[styles.noteText, { color: colors.subText }]}>{i18n.t('shareNote')}</Text>
+          )}
+        </View>
+
+        {/* Donate Button on Main Screen */}
+        <TouchableOpacity
+          style={[styles.donateButton, { borderColor: colors.border, marginBottom: 20 }]}
+          onPress={handleDonate}
+        >
+          <Ionicons name="heart-outline" size={16} color={colors.subText} style={{ marginRight: 6 }} />
+          <Text style={[styles.donateButtonText, { color: colors.subText }]}>{i18n.t('donate')}</Text>
+        </TouchableOpacity>
+      </ScrollView>
 
       {/* SETTINGS MODAL */}
       <Modal
@@ -425,6 +542,59 @@ export default function App() {
               {renderLanguageOption('ar', 'العربية')}
             </View>
 
+            {/* Cache Section */}
+            <Text style={[styles.sectionTitle, { color: colors.subText, marginTop: 24 }]}>Cache</Text>
+            <View style={[styles.optionsContainer, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+              <TouchableOpacity
+                style={[styles.settingOption, { backgroundColor: colors.cardBg }]}
+                onPress={handleManualClearCache}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="trash-bin-outline" size={20} color={colors.danger} style={{ marginRight: 8 }} />
+                  <Text style={[styles.settingText, { color: colors.danger }]}>
+                    {i18n.t('clearCache')}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            {/* Donation Section */}
+            <Text style={[styles.sectionTitle, { color: colors.subText, marginTop: 24 }]}>{i18n.t('donateTitle')}</Text>
+            <View style={[styles.optionsContainer, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+              <TouchableOpacity
+                style={[styles.settingOption, { backgroundColor: colors.tint }]}
+                onPress={handleDonate}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="heart" size={20} color={colors.tintText} style={{ marginRight: 8 }} />
+                  <Text style={[styles.settingText, { color: colors.tintText, fontWeight: '700' }]}>
+                    {i18n.t('donate')}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            {/* Privacy Policy Section */}
+            <Text style={[styles.sectionTitle, { color: colors.subText, marginTop: 24 }]}>About</Text>
+            <View style={[styles.optionsContainer, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+              <TouchableOpacity
+                style={[styles.settingOption, { backgroundColor: colors.cardBg }]}
+                onPress={handlePrivacyPolicy}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="shield-checkmark-outline" size={20} color={colors.text} style={{ marginRight: 8 }} />
+                  <Text style={[styles.settingText, { color: colors.text }]}>
+                    {i18n.t('privacyPolicy')}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            {/* Version Info */}
+            <View style={{ alignItems: 'center', marginTop: 30 }}>
+              <Text style={{ color: colors.subText, fontSize: 12 }}>v1.0.0</Text>
+            </View>
+
           </ScrollView>
         </View>
       </Modal>
@@ -437,7 +607,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    // justifyContent: 'center', // Removed to allow scrolling
     padding: 20,
     paddingTop: 60,
   },
@@ -630,6 +800,21 @@ const styles = StyleSheet.create({
   },
   settingText: {
     fontSize: 16,
+    fontWeight: '500',
+  },
+  donateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginTop: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+  },
+  donateButtonText: {
+    fontSize: 13,
     fontWeight: '500',
   }
 });
