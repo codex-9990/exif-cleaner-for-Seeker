@@ -1,30 +1,76 @@
 # Exif Cleaner for Seeker
 
-Uno strumento mobile incentrato sulla privacy progettato per rimuovere i metadati (dati Exif) dalle tue foto prima di condividerle online.
+Un pulitore di metadati fotografici leggero progettato per utenti attenti all'OpSec (sicurezza operativa) e alla privacy.
 
 [English](README.md) | [日本語](README_JA.md) | [Français](README_FR.md) | [Deutsch](README_DE.md) | [Italiano](README_IT.md) | [Español](README_ES.md) | [繁體中文](README_TW.md) | [简体中文](README_CN.md) | [한국어](README_KO.md) | [العربية](README_AR.md)
 
-## Perché Open Source?
+Questa app rimuove i metadati identificativi dalle foto **localmente sul tuo dispositivo**, prima di condividerle su piattaforme come X o Discord.
 
-**La tua privacy è la nostra priorità.**
-Crediamo che gli strumenti che gestiscono dati sensibili debbano essere trasparenti. Rendendo questo progetto open source, permettiamo a chiunque di ispezionare il codice e verificare che:
-- **Nessun dato viene caricato:** Tutta l'elaborazione avviene al 100% localmente sul tuo dispositivo.
-- **Nessun tracciamento nascosto:** Rimuoviamo semplicemente i metadati e salviamo l'immagine pulita nella tua libreria.
+**Nessun tracciamento. Nessun caricamento. Completamente offline.**
 
-## Caratteristiche
+---
 
-- **Rimuovi dati Exif:** Elimina posizione GPS, impostazioni della fotocamera e altri metadati.
-- **Elaborazione offline:** Nessuna connessione Internet richiesta. Le tue foto non lasciano mai il tuo telefono.
-- **Elaborazione batch:** Seleziona e pulisci più immagini contemporaneamente.
-- **Supporto multilingue:** Inglese, Giapponese, Francese, Tedesco, Italiano, Spagnolo, Cinese (Tradizionale/Semplificato), Coreano, Arabo.
-- **Modalità scura:** Completamente supportata.
-- **Supporta lo sviluppatore:** Opzione per donare SOL per supportare il progetto.
+## ✨ Caratteristiche
 
-## Come funziona
+- **Rimozione dati posizione (GPS)**
+- **Rimozione identificatori dispositivo e fotocamera**
+- **Rimozione tag software** come "Taken on Seeker"
+- **Elaborazione offline** (nessun caricamento in rete)
+- **Nessuna analisi, nessun tracker**
+- **Supporto multilingue:** Inglese, Giapponese, Francese, Tedesco, Italiano, Spagnolo, Cinese (Tradizionale/Semplificato), Coreano, Arabo
+- **Modalità scura:** Completamente supportata
 
-1. Seleziona le foto dalla tua galleria.
-2. L'app crea una copia pulita senza metadati.
-3. Salva la copia pulita nella tua galleria o condividila direttamente.
+---
+
+## 🔐 Perché esiste?
+
+Le foto contengono spesso metadati nascosti che possono rivelare:
+- dove sono state scattate
+- quando sono state scattate
+- quale dispositivo o fotocamera è stato utilizzato
+
+Per gli utenti di **Solana Mobile Seeker**, questo può includere metadati come:
+- modello del dispositivo
+- software della fotocamera
+- stringhe come `"Taken on Seeker"`
+
+Questa app aiuta a ridurre le perdite accidentali di metadati prima di condividere immagini pubblicamente.
+
+---
+
+## 🛡 Privacy e Sicurezza
+
+- Tutta l'elaborazione avviene **localmente sul dispositivo**
+- L'app **non** carica foto da nessuna parte
+- Nessun account, nessun portafoglio, nessuna interazione blockchain
+- Permessi Android minimi, solo quanto necessario per l'accesso ai media
+
+---
+
+## 📱 Permessi
+
+L'app richiede solo i permessi necessari per accedere e pulire i metadati delle foto:
+- **Accesso ai media (immagini/video):** Per leggere e salvare foto.
+- **Nessun microfono**
+- **Nessuna fotocamera**
+- **Nessun permesso di sovrapposizione**
+
+---
+
+## ⚠️ Note Importanti
+
+- Questa app rimuove i **metadati**, non le caratteristiche visive delle foto.
+- Non può garantire il completo anonimato o prevenire tutte le forme di fingerprinting del dispositivo.
+- Inteso come **strumento di igiene OpSec**, non come una soluzione miracolosa per la privacy.
+
+---
+
+## 🧪 Costruito con
+
+- Expo (React Native)
+- Android (Distribuzione APK)
+
+---
 
 ## Sviluppo
 
@@ -55,3 +101,9 @@ npx eas-cli build -p android --profile production
 > ```powershell
 > cmd /c npx eas-cli build -p android --profile preview
 > ```
+
+---
+
+## 📄 Licenza
+
+Licenza MIT
